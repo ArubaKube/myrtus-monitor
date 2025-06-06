@@ -9,14 +9,15 @@ docstring-code-format = true
 [lint]
 select = ["ALL"]
 ignore = [
-    "ANN",    # flake8-annotations
-    "TRY400", # ignore use logger.exception instead of error
-    "TRY003", # ignore raise-vanilla-args
-    "EM101",  # ignore raw-string-in-exception
-    "EM102",  # ignore f-string-in-exception
-    "TD",     # flake8-todos
-    "TC001",  # typing-only-first-party-import
-    "FIX002", # ignore fixme
+    "ANN",     # flake8-annotations
+    "TRY400",  # ignore use logger.exception instead of error
+    "TRY003",  # ignore raise-vanilla-args
+    "EM101",   # ignore raw-string-in-exception
+    "EM102",   # ignore f-string-in-exception
+    "TD",      # flake8-todos
+    "TC001",   # typing-only-first-party-import
+    "FIX002",  # ignore fixme
+    "PLR0913", # ignore to many arguments in function
 ]
 
 [lint.pydocstyle]
