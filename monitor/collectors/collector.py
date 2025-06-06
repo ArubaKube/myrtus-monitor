@@ -12,7 +12,7 @@ class Collector:
     # Leave this at 0 to keep the default period as defined in the configuration.
     period = 0
     # Leave this at 0 to keep the default timeout as defined in the configuration.
-    scaping_timeout = 0
+    scraping_timeout = 0
 
     def __init__(self):
         """Initialize the collector."""

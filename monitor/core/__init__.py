@@ -1,6 +1,8 @@
 """This core module contains the core logic for the monitoring service."""
 
+import asyncio
 import logging
+from abc import abstractmethod
 
 from monitor import collectors
 from monitor.collectors.collector import Collector
@@ -46,7 +48,11 @@ class Monitor:
         if len(self.active_collectors) > 0 and len(self.exclude_collectors) > 0:
             raise ConfigurationError("Cannot specify both active and exclude collectors.")
 
-        self.collectors: dict[str, Collector] = {}
+        self._metrics = {}
+
+        self._collectors: dict[str, Collector] = {}
+        self._collection_ready_event = asyncio.Event()
+        self._ready_collectors = 0
 
     async def init(self):
         """Discover the available collectors and initialize them."""
@@ -58,7 +64,7 @@ class Monitor:
 
         for collector_name, new_collector in available_collectors.items():
             try:
-                self.collectors[collector_name] = new_collector
+                self._collectors[collector_name] = new_collector
                 await new_collector.init()
             except MonitorBaseError as e:
                 err_msg = f"Failed to initialize collector {collector_name}: {e}"
@@ -71,10 +77,69 @@ class Monitor:
 
             logger.debug("Initialized collector %s", collector_name)
 
-        if len(self.collectors) == 0:
+        if len(self._collectors) == 0:
             raise ConfigurationError("No collectors to be initialized found.")
         logger.info("All collectors initialized successfully.")
 
     async def start(self):
         """Starts the monitoring service."""
-        # TODO: implement the monitoring logic.
+        # Define a semaphore to control the collection readiness.
+        tasks = [
+            asyncio.create_task(self._run_collector(collector, collector_name))
+            for collector_name, collector in self._collectors.items()
+        ]
+        # Append the metrics sender to the task list
+        tasks.append(asyncio.create_task(self._run_sender()))
+        logger.info("All collectors started.")
+        await asyncio.gather(*tasks)
+
+    async def _run_sender(self):
+        # wait for all collectors to be ready before sending metrics
+        await self._wait_for_collectors()
+        while True:
+            try:
+                logger.info("Sending metrics to the knowledge base at %s", self.kb_endpoint)
+                await self._send_metrics()
+            except Exception:  # noqa: PERF203
+                logger.exception("Failed to send metrics")
+            finally:
+                # Wait for a while before sending metrics again
+                await asyncio.sleep(10)
+
+    @abstractmethod
+    async def _send_metrics(self):
+        """Send the collected metrics to the knowledge base."""
+
+    async def _run_collector(self, collector: Collector, collector_name: str):
+        period = getattr(collector, "period", 0) or self.default_period
+        timeout = getattr(collector, "scraping_timeout", 0) or self.default_timeout
+        logger.info(
+            "Starting collector '%s' with period=%s, timeout=%s",
+            collector_name,
+            period,
+            timeout,
+        )
+
+        while True:
+            try:
+                res = await asyncio.wait_for(collector.collect(), timeout=timeout)
+                self._metrics[collector_name] = res
+                logger.debug('Collector "%s" collected successfully.', collector_name)
+            except asyncio.TimeoutError:
+                logger.error('Collector "%s" timed out after %d seconds.', collector_name, timeout)
+            except Exception:
+                logger.exception('Collector "%s" returned an exception', collector_name)
+            finally:
+                # Notify that all the collectors completes, it is possible to start pushing metrics.
+                if self._ready_collectors < len(self._collectors):
+                    self._ready_collectors += 1
+                    if self._ready_collectors == len(self._collectors):
+                        self._collection_ready_event.set()
+
+            await asyncio.sleep(period)
+
+    async def _wait_for_collectors(self):
+        """Wait for all collectors to be ready."""
+        logger.info("Waiting for all collectors to be ready...")
+        await self._collection_ready_event.wait()
+        logger.info("All collectors are ready, start sending metrics to the knowledge base...")

@@ -7,7 +7,7 @@ import sys
 
 from pydantic import ValidationError
 
-from monitor.core import Monitor
+from monitor.core.node_monitor import NodeMonitor
 from monitor.shared.config import LogLevel, NodeMonitorConfig
 from monitor.shared.errors import MonitorBaseError
 from monitor.shared.utils import cexit
@@ -18,6 +18,8 @@ def main():
     args = _parse_args()
     try:
         config = NodeMonitorConfig(
+            node_name=args.node_name,
+            liqo_cluster_id=args.liqo_cluster_id,
             kb_endpoint=args.kb_endpoint,
             log_level=LogLevel[args.log_level],
             default_timeout=args.default_timeout,
@@ -35,6 +37,9 @@ def main():
 
     except ValidationError as e:
         cexit(f"Invalid parameters: {e}")
+    except KeyboardInterrupt:
+        logging.info("Monitor service interrupted by user.")  # noqa: LOG015
+        sys.exit(0)
 
 
 async def run_monitor(config: NodeMonitorConfig):
@@ -45,7 +50,9 @@ async def run_monitor(config: NodeMonitorConfig):
     """
     logger = logging.getLogger(__name__)
     try:
-        monitor = Monitor(
+        monitor = NodeMonitor(
+            node_name=config.node_name,
+            liqo_cluster_id=config.liqo_cluster_id,
             kb_endpoint=config.kb_endpoint,
             active_collectors=config.active_collectors,
             exclude_collectors=config.exclude_collectors,
@@ -65,6 +72,23 @@ def _parse_args():
         description="Monitoring service, sends metrics to the resource registry.",
     )
     aparser = argparse.ArgumentParser(description="Monitor service configuration")
+
+    aparser.add_argument(
+        "-n",
+        "--node-name",
+        type=str,
+        required=True,
+        help="The name of the node being monitored.",
+    )
+
+    aparser.add_argument(
+        "-c",
+        "--liqo-cluster-id",
+        type=str,
+        required=True,
+        help="The Liqo cluster ID where the node is running.",
+    )
+
     aparser.add_argument(
         "-e",
         "--kb-endpoint",

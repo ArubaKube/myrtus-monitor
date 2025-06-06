@@ -17,6 +17,10 @@ class LogLevel(Enum):
 class NodeMonitorConfig:
     """Configuration for the monitor service."""
 
+    # The name of the node being monitored.
+    node_name: str
+    # The Liqo cluster ID where the node is running.
+    liqo_cluster_id: str
     # The endpoint for the knowledge base service where metrics are pushed.
     kb_endpoint: str
     # The default scraping timeout in seconds. When expired the collector is considered failed.

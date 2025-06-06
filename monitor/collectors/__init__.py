@@ -10,8 +10,8 @@ _COLLECTORS = [
 
 
 def get_declarative_collectors(
-    _: list[str] | None = None,
-    __: list[str] | None = None,
+    selected_collectors: list[str] | None = None,  # noqa: ARG001 # Temporary ignore for the linter
+    exclude: list[str] | None = None,  # noqa: ARG001 # Temporary ignore for the linter
 ) -> dict[str, Collector]:
     """Get the available declarative collectors.
 
@@ -51,7 +51,8 @@ def get_programmatic_collectors(
         return {
             collector.get_name(): collector()
             for collector in _COLLECTORS
-            if collector.name in selected_collectors and collector.name not in exclude_list
+            if collector.get_name() in selected_collectors
+            and collector.get_name() not in exclude_list
         }
 
     return {
@@ -77,16 +78,19 @@ def get_collectors(
     Returns:
         dict[str, type[Collector]]: A dictionary of collector names and its instance.
     """
-    # Check if the provided filter and exclude lists contain valid collector names.
+    # Check if the provided selected_collectors and exclude lists contain valid collector names.
     # TODO: get also the names of the declarative collectors.
     collector_names = [collector.get_name() for collector in _COLLECTORS]
-    for f_type, f_list in {"filter": selected_collectors, "exclude": exclude}.items():
+    for f_type, f_list in {
+        "active_collectors": selected_collectors,
+        "excluded_collectors": exclude,
+    }.items():
         for f in f_list or []:
             if f not in collector_names:
                 raise ConfigurationError(f'Unknown collector "{f}" in collector {f_type} list')
 
     programmatic_collectors = get_programmatic_collectors(
-        filter=selected_collectors,
+        selected_collectors=selected_collectors,
         exclude=exclude,
     )
     declarative_collectors = get_declarative_collectors(
