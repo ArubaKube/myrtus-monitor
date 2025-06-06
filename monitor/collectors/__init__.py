@@ -1,11 +1,19 @@
 """The collectors module contains the available collectors for the monitoring service."""
 
 from monitor.collectors.collector import Collector
+from monitor.collectors.core.cpu import CPUCollector
+from monitor.collectors.core.disk import DiskCollector
+from monitor.collectors.core.memory import MemoryCollector
 from monitor.collectors.core.node_identity import NodeIdentityCollector
+from monitor.collectors.core.swap import SwapCollector
 from monitor.shared.errors import ConfigurationError
 
 _COLLECTORS = [
     NodeIdentityCollector,
+    CPUCollector,
+    DiskCollector,
+    MemoryCollector,
+    SwapCollector,
 ]
 
 
