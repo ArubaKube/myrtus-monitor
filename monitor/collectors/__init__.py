@@ -4,16 +4,16 @@ from monitor.collectors.collector import Collector
 from monitor.collectors.core.cpu import CPUCollector
 from monitor.collectors.core.disk import DiskCollector
 from monitor.collectors.core.memory import MemoryCollector
-from monitor.collectors.core.node_identity import NodeIdentityCollector
 from monitor.collectors.core.swap import SwapCollector
+from monitor.collectors.internal.virtual_nodes import VirtualNodesCollector
 from monitor.shared.errors import ConfigurationError
 
 _COLLECTORS = [
-    NodeIdentityCollector,
     CPUCollector,
     DiskCollector,
     MemoryCollector,
     SwapCollector,
+    VirtualNodesCollector,
 ]
 
 
