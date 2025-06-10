@@ -57,16 +57,16 @@ def get_programmatic_collectors(
     exclude_list = exclude or []
     if selected_collectors is not None and len(selected_collectors) > 0:
         return {
-            collector.get_name(): collector()
+            collector_name: collector()
             for collector in _COLLECTORS
-            if collector.get_name() in selected_collectors
-            and collector.get_name() not in exclude_list
+            if (collector_name := collector.get_name()) in selected_collectors
+            and collector_name not in exclude_list
         }
 
     return {
-        collector.get_name(): collector()
+        collector_name: collector()
         for collector in _COLLECTORS
-        if collector not in exclude_list
+        if (collector_name := collector.get_name()) not in exclude_list
     }
 
 
