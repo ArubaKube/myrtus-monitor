@@ -39,7 +39,8 @@ class NodeMonitor(Monitor):
         super().__init__(
             kb_endpoint=kb_endpoint,
             active_collectors=active_collectors,
-            exclude_collectors=exclude_collectors,
+            # We don't want virtual_nodes collector to be included in the node monitor
+            exclude_collectors=["virtual_nodes"] + (exclude_collectors or []),
             default_timeout=default_timeout,
             default_period=default_period,
         )
