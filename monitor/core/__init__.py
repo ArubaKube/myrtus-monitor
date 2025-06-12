@@ -95,7 +95,14 @@ class Monitor:
 
     async def _run_sender(self):
         # wait for all collectors to be ready before sending metrics
+        logger.info("Waiting for collectors to be ready before sending metrics...")
         await self._wait_for_collectors()
+
+        send_period = min([
+            collector.period or self.default_period for collector in self._collectors.values()
+        ])
+        logger.info("Starting metrics sender with period=%s seconds", send_period)
+
         while True:
             try:
                 logger.info("Sending metrics to the knowledge base at %s", self.kb_endpoint)
@@ -104,7 +111,7 @@ class Monitor:
                 logger.exception("Failed to send metrics")
             finally:
                 # Wait for a while before sending metrics again
-                await asyncio.sleep(10)
+                await asyncio.sleep(send_period)
 
     @abstractmethod
     async def _send_metrics(self):
