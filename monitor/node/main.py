@@ -8,7 +8,8 @@ import sys
 from pydantic import ValidationError
 
 from monitor.core.node_monitor import NodeMonitor
-from monitor.shared.config import LogLevel, NodeMonitorConfig
+from monitor.node.config import NodeMonitorConfig
+from monitor.shared.config import LogLevel
 from monitor.shared.errors import MonitorBaseError
 from monitor.shared.utils import cexit
 
@@ -69,9 +70,8 @@ async def run_monitor(config: NodeMonitorConfig):
 
 def _parse_args():
     aparser = argparse.ArgumentParser(
-        description="Monitoring service, sends metrics to the resource registry.",
+        description="Node monitoring service, sends metrics to the resource registry.",
     )
-    aparser = argparse.ArgumentParser(description="Monitor service configuration")
 
     aparser.add_argument(
         "-n",
