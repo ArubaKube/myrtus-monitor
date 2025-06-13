@@ -187,7 +187,6 @@ disable =
     no-else-continue,                      # R1724 -> RET507
     no-else-raise,                         # R1720 -> RET506
     no-else-return,                        # R1705 -> RET505
-    no-self-use,                           # R6301 -> PLR6301
     no-staticmethod-decorator,             # R0203 -> PLR0203
     property-with-parameters,              # R0206 -> PLR0206
     redefined-argument-from-local,         # R1704 -> PLR1704

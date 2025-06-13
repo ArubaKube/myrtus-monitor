@@ -12,7 +12,12 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pylint>=3.3.7", "ruff>=0.11.12"]
+dev = [
+    "pylint>=3.3.7",
+    "pytest>=8.4.0",
+    "pytest-asyncio>=1.0.0",
+    "ruff>=0.11.12",
+]
 
 [tool.uv]
 package = true
