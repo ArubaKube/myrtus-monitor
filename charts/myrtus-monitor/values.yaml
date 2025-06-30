@@ -1,0 +1,85 @@
+# Default values for myrtus-monitor.
+
+# Global configuration
+global:
+  # The Liqo cluster ID where the services are running
+  liqoClusterId: "default-cluster"
+  # The endpoint for the knowledge base service where metrics are pushed
+  kbEndpoint: "http://knowledgebase-service:8080"
+
+# Image configuration
+image:
+  repository: myrtus-monitor
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Common configuration for both node and cluster monitors
+common:
+  logLevel: INFO  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  defaultTimeout: 60  # Default scraping timeout in seconds
+  defaultPeriod: 60   # Default scraping period in seconds
+
+# Node monitor specific configuration
+nodeMonitor:
+  enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  # List of active collectors to use (leave empty to use all available collectors)
+  activeCollectors: []
+  # List of collectors to exclude (leave empty to use all available collectors)
+  excludeCollectors: []
+
+# Cluster monitor specific configuration
+clusterMonitor:
+  enabled: true
+  resources:
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # limits:
+    #   cpu: 200m
+    #   memory: 256Mi
+
+# Service account configuration
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod Security Context
+podSecurityContext: {}
+  # fsGroup: 2000
+
+# Container Security Context
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# Node and cluster service configuration
+service:
+  type: ClusterIP
+  port: 8080
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod labels
+podLabels: {}
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
