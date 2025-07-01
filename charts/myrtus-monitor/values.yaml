@@ -9,7 +9,7 @@ global:
 
 # Image configuration
 image:
-  repository: myrtus-monitor
+  repository: ghcr.io/ale/myrtus/myrtus-monitor
   tag: latest
   pullPolicy: IfNotPresent
 

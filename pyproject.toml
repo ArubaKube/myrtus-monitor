@@ -25,3 +25,6 @@ package = true
 [project.scripts]
 node-monitor = "monitor.node.main:main"
 cluster-monitor = "monitor.cluster.main:main"
+
+[tool.setuptools]
+packages = ["monitor"]
