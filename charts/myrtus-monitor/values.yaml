@@ -9,9 +9,12 @@ global:
 
 # Image configuration
 image:
-  repository: ghcr.io/ale/myrtus/myrtus-monitor
+  repository: ghcr.io/arubakube/myrtus-monitor
   tag: latest
   pullPolicy: IfNotPresent
+  pullSecret:
+    enabled: true
+    name: "ghcr-secret"
 
 # Common configuration for both node and cluster monitors
 common:
@@ -83,3 +86,30 @@ tolerations: []
 
 # Affinity
 affinity: {}
+
+# Liqo NodeBinding subchart configuration
+liqo-nodebind:
+  deployment:
+    replicaCount: 1
+    image:
+      repository: ghcr.io
+      name: arubakube/liqo-nodebind
+      pullPolicy: Always
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: "latest"
+      pullSecret:
+        enabled: true
+        name: "ghcr-secret"
+    container:
+      args:
+        webhookPort: 9443
+        metricsPort: 8080
+        probePort: 8081
+        verbosity: 2
+      resources: 
+        limits:
+          cpu: 200m
+          memory: 256Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi

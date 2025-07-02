@@ -28,6 +28,10 @@ spec:
         {{- end }}
     spec:
       serviceAccountName: {{ include "myrtus-monitor.serviceAccountName" . }}
+      {{- if .Values.image.pullSecret.enabled }}
+      imagePullSecrets:
+        - name: {{ .Values.image.pullSecret.name }}
+      {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
