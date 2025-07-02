@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: liqo-nodebind
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: liqo-nodebind
+spec:
+  selector:
+    app: liqo-nodebind
+  ports:
+    - name: webhook
+      port: {{ .Values.deployment.container.args.webhookPort }}
+      targetPort: webhook
+      protocol: TCP
+    - name: metrics
+      port: {{ .Values.deployment.container.args.metricsPort }}
+      targetPort: metrics
+      protocol: TCP
+    - name: probe
+      port: {{ .Values.deployment.container.args.probePort }}
+      targetPort: probe
+      protocol: TCP
