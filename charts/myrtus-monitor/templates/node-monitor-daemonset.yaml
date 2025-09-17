@@ -59,9 +59,8 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: spec.nodeName
-        envFrom:
-        - configMapRef:
-            name: "{{ .Values.global.envConfigMapName }}"
+          - name: DKB_URL
+            value: {{ .Values.global.kbEndpoint }}
         resources:
           {{- toYaml .Values.nodeMonitor.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

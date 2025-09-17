@@ -6,7 +6,6 @@ global:
   liqoClusterId: "local-cluster-1"
   # The endpoint for the knowledge base service where metrics are pushed
   kbEndpoint: "http://dkb:3030"
-  envConfigMapName: "myrtus-env"
 
 # Image configuration
 image:
