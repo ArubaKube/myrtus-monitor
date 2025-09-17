@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
+    build-essential git \
     && rm -rf /var/lib/apt/lists/*
 
 # Set environment variables
@@ -21,10 +21,10 @@ RUN pip install uv
 
 # Copy the rest of the application code
 COPY . /app/
-RUN pip install ./libs/mirto-lib
+# RUN pip install ./libs/mirto-lib
 
 # Install runtime dependencies
-RUN uv sync --no-dev
+RUN uv sync --no-dev --locked
 
 # Stage 2: Runtime image
 FROM python:3.10-slim

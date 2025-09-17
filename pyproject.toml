@@ -24,7 +24,7 @@ dev = [
 package = true
 
 [tool.uv.sources]
-mirtolib = { path = "libs/mirto-lib" }
+mirtolib = { git = "https://git:glpat-xWnwBZR8VSE3Ghq7CFAe@gitlab.abinsula.com/myrtus/mirto/mirto-lib" }
 
 [project.scripts]
 node-monitor = "monitor.node.main:main"

@@ -230,17 +230,10 @@ wheels = [
 [[package]]
 name = "mirtolib"
 version = "1.0"
-source = { directory = "../development-environment/mirto-lib" }
+source = { git = "https://gitlab.abinsula.com/myrtus/mirto/mirto-lib#0383526f6155c7fe3225311afe2ebd8bcba0d55c" }
 dependencies = [
     { name = "pydantic" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "pydantic", specifier = ">=2" },
-    { name = "pylint", marker = "extra == 'develop'" },
-]
-provides-extras = ["develop"]
 
 [[package]]
 name = "myrtus-monitor"
@@ -266,7 +259,7 @@ dev = [
 requires-dist = [
     { name = "argparse", specifier = ">=1.4.0" },
     { name = "kubernetes", specifier = ">=33.1.0" },
-    { name = "mirtolib", directory = "../development-environment/mirto-lib" },
+    { name = "mirtolib", git = "https://gitlab.abinsula.com/myrtus/mirto/mirto-lib" },
     { name = "psutil", specifier = ">=5.9.0" },
     { name = "pydantic", specifier = ">=2.11.5" },
 ]
