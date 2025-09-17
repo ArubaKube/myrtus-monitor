@@ -1,7 +1,9 @@
 .PHONY: build import-libs
 
-build: import-libs
-	@sh ./build_docker.sh
-
 import-libs:
-	@sh ./import_mirto_libs.sh
+	@mkdir -p libs/mirto-lib
+	@cp -r ../development-environment/mirto-lib/ ./libs/mirto-lib/
+	@uv pip install ./libs/mirto-lib/
+
+build: import-libs
+	@docker build -f docker/Dockerfile -t ghcr.io/arubakube/myrtus-monitor .
