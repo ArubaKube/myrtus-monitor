@@ -3,9 +3,10 @@
 # Global configuration
 global:
   # The Liqo cluster ID where the services are running
-  liqoClusterId: "default-cluster"
+  liqoClusterId: "local-cluster-1"
   # The endpoint for the knowledge base service where metrics are pushed
-  kbEndpoint: "http://knowledgebase-service:8080"
+  kbEndpoint: "http://dkb:3030"
+  envConfigMapName: "myrtus-env"
 
 # Image configuration
 image:
@@ -18,9 +19,9 @@ image:
 
 # Common configuration for both node and cluster monitors
 common:
-  logLevel: INFO  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
-  defaultTimeout: 60  # Default scraping timeout in seconds
-  defaultPeriod: 60   # Default scraping period in seconds
+  logLevel: DEBUG # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  defaultTimeout: 60 # Default scraping timeout in seconds
+  defaultPeriod: 60 # Default scraping period in seconds
 
 # Node monitor specific configuration
 nodeMonitor:
@@ -55,11 +56,13 @@ serviceAccount:
   name: ""
 
 # Pod Security Context
-podSecurityContext: {}
+podSecurityContext:
+  {}
   # fsGroup: 2000
 
 # Container Security Context
-securityContext: {}
+securityContext:
+  {}
   # capabilities:
   #   drop:
   #   - ALL
@@ -94,7 +97,7 @@ liqo-nodebind:
     image:
       repository: ghcr.io
       name: arubakube/liqo-nodebind
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
       tag: "latest"
       pullSecret:
@@ -106,7 +109,7 @@ liqo-nodebind:
         metricsPort: 8080
         probePort: 8081
         verbosity: 2
-      resources: 
+      resources:
         limits:
           cpu: 200m
           memory: 256Mi

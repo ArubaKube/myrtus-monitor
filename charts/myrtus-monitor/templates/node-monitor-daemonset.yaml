@@ -59,6 +59,9 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: spec.nodeName
+        envFrom:
+        - configMapRef:
+            name: "{{ .Values.global.envConfigMapName }}"
         resources:
           {{- toYaml .Values.nodeMonitor.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

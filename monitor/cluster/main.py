@@ -20,6 +20,7 @@ def main():
     try:
         config = ClusterMonitorConfig(
             liqo_cluster_id=args.liqo_cluster_id,
+            kb_enabled=not args.kb_disabled,
             kb_endpoint=args.kb_endpoint,
             log_level=LogLevel[args.log_level],
             default_timeout=args.default_timeout,
@@ -50,6 +51,7 @@ async def run_monitor(config: ClusterMonitorConfig):
     try:
         monitor = ClusterMonitor(
             liqo_cluster_id=config.liqo_cluster_id,
+            kb_enabled=config.kb_enabled,
             kb_endpoint=config.kb_endpoint,
             default_timeout=config.default_timeout,
             default_period=config.default_period,
@@ -75,6 +77,13 @@ def _parse_args():
         type=str,
         required=True,
         help="The Liqo cluster ID where the node is running.",
+    )
+
+    aparser.add_argument(
+        "-k",
+        "--kb-disabled",
+        action="store_true",
+        help="Disable the Knowledge base integration.",
     )
 
     aparser.add_argument(

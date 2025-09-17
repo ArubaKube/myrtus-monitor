@@ -21,6 +21,7 @@ RUN pip install uv
 
 # Copy the rest of the application code
 COPY . /app/
+RUN pip install ./libs/mirto-lib
 
 # Install runtime dependencies
 RUN uv sync --no-dev
