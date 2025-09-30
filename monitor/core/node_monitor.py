@@ -2,6 +2,9 @@
 
 import logging
 
+from mirto import dkb
+from mirto.namespaces import DEPLOYER_COMPUTES
+
 from monitor.core import Monitor
 
 logger = logging.getLogger(__name__)
@@ -15,6 +18,7 @@ class NodeMonitor(Monitor):
 
     def __init__(
         self,
+        kb_enabled: bool,
         kb_endpoint: str,
         liqo_cluster_id: str,
         node_name: str,
@@ -37,6 +41,7 @@ class NodeMonitor(Monitor):
             default_period (int, optional): The default scraping period. Defaults to 60.
         """
         super().__init__(
+            kb_enabled=kb_enabled,
             kb_endpoint=kb_endpoint,
             active_collectors=active_collectors,
             # We don't want virtual_nodes collector to be included in the node monitor
@@ -54,6 +59,17 @@ class NodeMonitor(Monitor):
             "type": "node",
         }
 
+        # this is how it should be done but it's not working due to the current KDB's implementation
+        # KDB is reading the value from the env variable KB_URL even if passed from outside
+        dkb.KB_URL = self.kb_endpoint
+
     async def _send_metrics(self):
-        # TODO: Implement the logic to send metrics to the knowledge base endpoint.
-        logger.info(self._metrics)
+        logger.debug(self._metrics)
+
+        if self.kb_enabled:
+            logger.info("Sending metrics to DKB...")
+            dkb.store_json(
+                DEPLOYER_COMPUTES, f"{self.liqo_cluster_id}_{self.node_name}", self._metrics
+            )
+        else:
+            logger.info("DKB integration disabled. No data has been sent.")

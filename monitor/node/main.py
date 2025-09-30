@@ -21,6 +21,7 @@ def main():
         config = NodeMonitorConfig(
             node_name=args.node_name,
             liqo_cluster_id=args.liqo_cluster_id,
+            kb_enabled=not args.kb_disabled,
             kb_endpoint=args.kb_endpoint,
             log_level=LogLevel[args.log_level],
             default_timeout=args.default_timeout,
@@ -54,6 +55,7 @@ async def run_monitor(config: NodeMonitorConfig):
         monitor = NodeMonitor(
             node_name=config.node_name,
             liqo_cluster_id=config.liqo_cluster_id,
+            kb_enabled=config.kb_enabled,
             kb_endpoint=config.kb_endpoint,
             active_collectors=config.active_collectors,
             exclude_collectors=config.exclude_collectors,
@@ -87,6 +89,13 @@ def _parse_args():
         type=str,
         required=True,
         help="The Liqo cluster ID where the node is running.",
+    )
+
+    aparser.add_argument(
+        "-k",
+        "--kb-disabled",
+        action="store_true",
+        help="Disable the Knowledge base integration.",
     )
 
     aparser.add_argument(

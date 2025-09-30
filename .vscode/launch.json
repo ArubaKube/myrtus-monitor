@@ -1,0 +1,38 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Node Monitor: with predefined args",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "monitor/node/main.py",
+            "console": "integratedTerminal",
+            "args": "  --node-name='local-node-01' --liqo-cluster-'id=local-cluster' --kb-endpoint='http://localhost:8080/dkb/' --log-level='DEBUG'",
+            "env": {
+                "DKB_URL": "http://localhost:8080/dkb"
+            }
+        },
+        {
+            "name": "Cluster Monitor: with predefined args",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "monitor/cluster/main.py",
+            "console": "integratedTerminal",
+            "args": "  --liqo-cluster-'id=local-cluster' --kb-endpoint='http://localhost:8080/dkb/' --log-level='DEBUG'",
+            "env": {
+                "DKB_URL": "http://localhost:8080/dkb"
+            }
+        },
+        {
+            "name": "Current File with Arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": "${command:pickArgs}"
+        }
+    ]
+}

@@ -11,8 +11,10 @@ wheels/
 
 # IDE files
 .idea/
-.vscode/launch.json
 .history/
 
 # Ruff related files and directories
 .ruff_cache/
+
+# Imported libs
+libs/**

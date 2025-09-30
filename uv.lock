@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.12'",
@@ -228,12 +228,21 @@ wheels = [
 ]
 
 [[package]]
+name = "mirtolib"
+version = "1.0"
+source = { git = "https://gitlab.abinsula.com/myrtus/mirto/mirto-lib#0383526f6155c7fe3225311afe2ebd8bcba0d55c" }
+dependencies = [
+    { name = "pydantic" },
+]
+
+[[package]]
 name = "myrtus-monitor"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "argparse" },
     { name = "kubernetes" },
+    { name = "mirtolib" },
     { name = "psutil" },
     { name = "pydantic" },
 ]
@@ -250,6 +259,7 @@ dev = [
 requires-dist = [
     { name = "argparse", specifier = ">=1.4.0" },
     { name = "kubernetes", specifier = ">=33.1.0" },
+    { name = "mirtolib", git = "https://gitlab.abinsula.com/myrtus/mirto/mirto-lib" },
     { name = "psutil", specifier = ">=5.9.0" },
     { name = "pydantic", specifier = ">=2.11.5" },
 ]

@@ -13,6 +13,8 @@ class NodeMonitorConfig:
     node_name: str
     # The Liqo cluster ID where the node is running.
     liqo_cluster_id: str
+    # The knowledge base feature flag.
+    kb_enabled: bool
     # The endpoint for the knowledge base service where metrics are pushed.
     kb_endpoint: str
     # The default scraping timeout in seconds. When expired the collector is considered failed.

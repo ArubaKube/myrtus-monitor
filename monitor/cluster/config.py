@@ -13,6 +13,8 @@ class ClusterMonitorConfig:
     liqo_cluster_id: str
     # The endpoint for the knowledge base service where metrics are pushed.
     kb_endpoint: str
+    # The knowledge base feature flag.
+    kb_enabled: bool
     # The default scraping timeout in seconds. When expired the collector is considered failed.
     default_timeout: int
     # The default scraping period in seconds. The collector is executed every period.

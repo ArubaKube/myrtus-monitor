@@ -50,6 +50,9 @@ spec:
           - "--default-period={{ .Values.common.defaultPeriod }}"
         resources:
           {{- toYaml .Values.clusterMonitor.resources | nindent 12 }}
+        env:
+          - name: DKB_URL
+            value: {{ .Values.global.kbEndpoint }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

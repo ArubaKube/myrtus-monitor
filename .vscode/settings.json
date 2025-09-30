@@ -4,7 +4,7 @@
         "editor.defaultFormatter": "charliermarsh.ruff"
     },
     "python.analysis.autoImportCompletions": true,
-    "editor.rulers": [
-        100
+    "python.analysis.extraPaths": [
+        "libs/mirto-lib"
     ]
 }

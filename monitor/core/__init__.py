@@ -20,6 +20,7 @@ class Monitor:
     def __init__(
         self,
         kb_endpoint: str,
+        kb_enabled: bool = False,
         active_collectors: list[str] | None = None,
         exclude_collectors: list[str] | None = None,
         default_timeout: int = 60,
@@ -39,6 +40,7 @@ class Monitor:
         Raises:
             ConfigurationError: raised when invalid configuration is provided.
         """
+        self.kb_enabled = kb_enabled
         self.kb_endpoint = kb_endpoint
         self.active_collectors = active_collectors or []
         self.exclude_collectors = exclude_collectors or []
