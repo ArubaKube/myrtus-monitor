@@ -22,6 +22,10 @@ RUN pip install uv
 # Copy the rest of the application code
 COPY . /app/
 
+# Accept GitLab token as build argument
+ARG GITLAB_TOKEN
+ENV GITLAB_TOKEN=${GITLAB_TOKEN}
+
 # Install runtime dependencies
 RUN uv sync --no-dev --locked
 
