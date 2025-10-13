@@ -24,7 +24,9 @@ COPY . /app/
 
 # Accept GitLab token as build argument
 ARG GITLAB_TOKEN
-ENV GITLAB_TOKEN=${GITLAB_TOKEN}
+
+# Replace the token placeholder in pyproject.toml before installing dependencies
+RUN sed -i "s|\${GITLAB_TOKEN}|${GITLAB_TOKEN}|g" pyproject.toml
 
 # Install runtime dependencies
 RUN uv sync --no-dev --locked
