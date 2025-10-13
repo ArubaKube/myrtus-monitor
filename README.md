@@ -6,7 +6,7 @@ Unlocking the living dimension of Cyber-Physical Systems across the computing co
 
 ## 🧭 Overview
 
-This repository is part of the MYRTUS Project,
+This repository is part of the [MYRTUS Project](https://myrtus-project.eu/),
 an EU initiative that pioneers a new generation of Cyber-Physical Systems (CPS) by embracing the principles of the EUCloudEdgeIoT Initiative.
 
 MYRTUS envisions a unified computing continuum where 🌐 edge, ☁️ cloud, and ⚙️ fog environments cooperate seamlessly.
