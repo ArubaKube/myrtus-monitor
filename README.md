@@ -1,5 +1,17 @@
 # Myrtus monitor service
 
+## 🌿 MYRTUS Project Component
+
+Unlocking the living dimension of Cyber-Physical Systems across the computing continuum.
+
+## 🧭 Overview
+
+This repository is part of the MYRTUS Project,
+an EU initiative that pioneers a new generation of Cyber-Physical Systems (CPS) by embracing the principles of the EUCloudEdgeIoT Initiative.
+
+MYRTUS envisions a unified computing continuum where 🌐 edge, ☁️ cloud, and ⚙️ fog environments cooperate seamlessly.
+To achieve this, it reinvents programming models, languages, and orchestration tools for collaborative, distributed, and decentralized systems.
+
 ## Architecture
 
 The monitoring service is a component that collects metrics from the Kubernetes cluster where it operates, as well as from its node, and transmits them to the Myrtus knowledge base component.
