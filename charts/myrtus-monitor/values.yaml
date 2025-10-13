@@ -89,13 +89,13 @@ tolerations: []
 # Affinity
 affinity: {}
 
-# Liqo NodeBinding subchart configuration
-liqo-nodebind:
+# Myrtus NodeBinding subchart configuration
+myrtus-nodebind:
   deployment:
     replicaCount: 1
     image:
       repository: ghcr.io
-      name: arubakube/liqo-nodebind
+      name: arubakube/myrtus-nodebind
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
       tag: "latest"
