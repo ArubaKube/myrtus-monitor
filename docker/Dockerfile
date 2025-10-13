@@ -31,6 +31,9 @@ RUN sed -i "s|\${GITLAB_TOKEN}|${GITLAB_TOKEN}|g" pyproject.toml
 # Install runtime dependencies
 RUN uv sync --no-dev --locked
 
+# Delete GitLab token
+RUN rm -f pyproject.toml
+
 # Stage 2: Runtime image
 FROM python:3.10-slim
 
