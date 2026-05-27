@@ -3,9 +3,10 @@
 import logging
 
 from mirto import dkb
-from mirto.namespaces import DEPLOYER_COMPUTES
+from mirto.namespaces import COMPUTE_NODES
 
 from monitor.core import Monitor
+from monitor.shared.config import NodeType
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ class NodeMonitor(Monitor):
         kb_endpoint: str,
         liqo_cluster_id: str,
         node_name: str,
+        node_type: NodeType,
         active_collectors: list[str] | None = None,
         exclude_collectors: list[str] | None = None,
         default_timeout: int = 60,
@@ -52,9 +54,11 @@ class NodeMonitor(Monitor):
 
         self.liqo_cluster_id = liqo_cluster_id
         self.node_name = node_name
+        self.node_type = node_type
 
         self._metrics = {
             "node_name": node_name,
+            "node_type": node_type.value,
             "liqo_cluster_id": liqo_cluster_id,
             "type": "node",
         }
@@ -69,7 +73,7 @@ class NodeMonitor(Monitor):
         if self.kb_enabled:
             logger.info("Sending metrics to DKB...")
             dkb.store_json(
-                DEPLOYER_COMPUTES, f"{self.liqo_cluster_id}_{self.node_name}", self._metrics
+                COMPUTE_NODES, f"{self.liqo_cluster_id}_{self.node_name}", self._metrics
             )
         else:
             logger.info("DKB integration disabled. No data has been sent.")

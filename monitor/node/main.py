@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 from monitor.core.node_monitor import NodeMonitor
 from monitor.node.config import NodeMonitorConfig
-from monitor.shared.config import LogLevel
+from monitor.shared.config import LogLevel, NodeType
 from monitor.shared.errors import MonitorBaseError
 from monitor.shared.utils import cexit
 
@@ -20,6 +20,7 @@ def main():
     try:
         config = NodeMonitorConfig(
             node_name=args.node_name,
+            node_type=NodeType[args.node_type],
             liqo_cluster_id=args.liqo_cluster_id,
             kb_enabled=not args.kb_disabled,
             kb_endpoint=args.kb_endpoint,
@@ -54,6 +55,7 @@ async def run_monitor(config: NodeMonitorConfig):
     try:
         monitor = NodeMonitor(
             node_name=config.node_name,
+            node_type=config.node_type,
             liqo_cluster_id=config.liqo_cluster_id,
             kb_enabled=config.kb_enabled,
             kb_endpoint=config.kb_endpoint,
@@ -81,6 +83,15 @@ def _parse_args():
         type=str,
         required=True,
         help="The name of the node being monitored.",
+    )
+
+    aparser.add_argument(
+        "-y",
+        "--node-type",
+        type=str,
+        required=True,
+        choices=[t.name for t in NodeType],
+        help="The type of the node being monitored (cloud, fog, edge).",
     )
 
     aparser.add_argument(

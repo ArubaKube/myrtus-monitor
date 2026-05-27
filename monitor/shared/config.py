@@ -10,3 +10,11 @@ class LogLevel(Enum):
     INFO = "INFO"
     WARNING = "WARNING"
     ERROR = "ERROR"
+
+
+class NodeType(Enum):
+    """Enum for node types in the Liqo federation."""
+
+    cloud = "cloud"
+    fog = "fog"
+    edge = "edge"

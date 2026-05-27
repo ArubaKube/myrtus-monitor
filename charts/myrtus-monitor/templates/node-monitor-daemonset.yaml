@@ -43,6 +43,7 @@ spec:
           - node-monitor
         args:
           - "--node-name=$(NODE_NAME)"
+          - "--node-type={{ .Values.nodeMonitor.nodeType }}"
           - "--liqo-cluster-id={{ .Values.global.liqoClusterId }}"
           - "--kb-endpoint={{ .Values.global.kbEndpoint }}"
           - "--log-level={{ .Values.common.logLevel }}"

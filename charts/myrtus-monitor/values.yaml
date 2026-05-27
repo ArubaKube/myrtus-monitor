@@ -25,6 +25,8 @@ common:
 # Node monitor specific configuration
 nodeMonitor:
   enabled: true
+  # The type of the node being monitored. Options: cloud, fog, edge
+  nodeType: "cloud"
   resources:
     requests:
       cpu: 100m

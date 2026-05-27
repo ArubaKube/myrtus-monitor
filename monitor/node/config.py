@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from monitor.shared.config import LogLevel
+from monitor.shared.config import LogLevel, NodeType
 
 
 @dataclass
@@ -11,6 +11,8 @@ class NodeMonitorConfig:
 
     # The name of the node being monitored.
     node_name: str
+    # The type of the node (cloud, fog, edge).
+    node_type: NodeType
     # The Liqo cluster ID where the node is running.
     liqo_cluster_id: str
     # The knowledge base feature flag.
