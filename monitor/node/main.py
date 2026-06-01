@@ -4,7 +4,9 @@ import argparse
 import asyncio
 import logging
 import sys
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 
+from kubernetes import client, config as k8s_config
 from pydantic import ValidationError
 
 from monitor.core.node_monitor import NodeMonitor
@@ -13,14 +15,55 @@ from monitor.shared.config import LogLevel, NodeType
 from monitor.shared.errors import MonitorBaseError
 from monitor.shared.utils import cexit
 
+NODE_TYPE_LABEL = "myrtus.io/node-type"
+
+
+def _resolve_node_type(node_name: str, fallback: str, timeout: int = 10) -> str:
+    """Return the node type from the node's label, falling back to the CLI arg.
+
+    Reads the myrtus.io/node-type label from the Kubernetes node object so that
+    the type can be changed at runtime without a Helm redeploy.
+    """
+    logging.info("Resolving node type for node '%s' (fallback=%s)", node_name, fallback)
+
+    def _fetch() -> str | None:
+        logging.debug("Loading in-cluster K8s config...")
+        configuration = client.Configuration()
+        k8s_config.load_incluster_config(client_configuration=configuration)
+        # kubernetes-client >=36 stores the token under api_key['authorization'] but
+        # auth_settings() looks for api_key['BearerToken'] — remap so the header is sent.
+        if bearer := configuration.api_key.get('authorization'):
+            configuration.api_key['BearerToken'] = bearer
+        logging.debug("In-cluster config loaded, reading node '%s'...", node_name)
+        with client.ApiClient(configuration) as api:
+            labels = client.CoreV1Api(api).read_node(node_name, _request_timeout=timeout).metadata.labels or {}
+        logging.debug("Node labels: %s", labels)
+        return labels.get(NODE_TYPE_LABEL)
+
+    executor = ThreadPoolExecutor(max_workers=1)
+    try:
+        label_value = executor.submit(_fetch).result(timeout=timeout)
+        if label_value:
+            logging.info("node_type resolved from node label '%s': %s", NODE_TYPE_LABEL, label_value)
+            return label_value
+        logging.debug("Label '%s' not set on node '%s', using --node-type fallback", NODE_TYPE_LABEL, node_name)
+    except FuturesTimeoutError:
+        logging.warning("K8s node label lookup timed out after %ds, falling back to --node-type arg", timeout)
+    except Exception as exc:
+        logging.warning("Could not read node labels from K8s API (%s), falling back to --node-type arg", exc)
+    finally:
+        executor.shutdown(wait=False)
+    return fallback
+
 
 def main():
     """Entrypoint for the Node monitor service."""
     args = _parse_args()
+    logging.basicConfig(level=LogLevel[args.log_level].value, force=True)
     try:
         config = NodeMonitorConfig(
             node_name=args.node_name,
-            node_type=NodeType[args.node_type],
+            node_type=NodeType[args.node_type if args.skip_node_type_inference else _resolve_node_type(args.node_name, args.node_type)],
             liqo_cluster_id=args.liqo_cluster_id,
             kb_enabled=not args.kb_disabled,
             kb_endpoint=args.kb_endpoint,
@@ -29,11 +72,6 @@ def main():
             default_period=args.default_period,
             active_collectors=args.active_collectors,
             exclude_collectors=args.exclude_collectors,
-        )
-
-        # Configure logging based on the log level
-        logging.basicConfig(
-            level=config.log_level.value,
         )
 
         asyncio.run(run_monitor(config))
@@ -92,6 +130,13 @@ def _parse_args():
         required=True,
         choices=[t.name for t in NodeType],
         help="The type of the node being monitored (cloud, fog, edge).",
+    )
+
+    aparser.add_argument(
+        "--skip-node-type-inference",
+        action="store_true",
+        help=f"Skip node type inference from the '{NODE_TYPE_LABEL}' node label "
+             "and use --node-type directly.",
     )
 
     aparser.add_argument(

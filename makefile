@@ -6,7 +6,8 @@
         helm-install helm-upgrade helm-uninstall run-node run-cluster run-node-example \
         run-cluster-example docker-run-node docker-run-cluster docker-run-node-example \
         docker-run-cluster-example dev-setup check-deps security-check all \
-        update-deps update-git-deps
+        update-deps update-git-deps \
+        kind-setup kind-teardown kind-test-helm-value kind-test-label-override kind-test
 
 # Default target
 .DEFAULT_GOAL := help
@@ -28,6 +29,7 @@ RED := \033[0;31m
 GREEN := \033[0;32m
 YELLOW := \033[0;33m
 BLUE := \033[0;34m
+ORANGE := \033[38;5;208m
 NC := \033[0m # No Color
 
 help: ## Show this help message
@@ -115,7 +117,7 @@ clean: ## Clean build artifacts and cache
 # Docker
 docker-build: ## Build Docker image
 	@echo "$(BLUE)Building Docker image...$(NC)"
-	docker build -f docker/Dockerfile -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
+	docker build -f docker/Dockerfile --build-arg GITLAB_TOKEN=$(GITLAB_TOKEN) -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
 	docker tag $(DOCKER_IMAGE):$(DOCKER_TAG) $(DOCKER_IMAGE):latest
 
 docker-push: docker-build ## Build and push Docker image
@@ -123,11 +125,11 @@ docker-push: docker-build ## Build and push Docker image
 	docker push $(DOCKER_IMAGE):$(DOCKER_TAG)
 	docker push $(DOCKER_IMAGE):latest
 
-docker-run-node: ## Run node monitor in Docker (requires NODE_NAME, CLUSTER_ID, KB_ENDPOINT)
+docker-run-node: ## Run node monitor in Docker (requires NODE_NAME, NODE_TYPE, CLUSTER_ID, KB_ENDPOINT)
 	@echo "$(BLUE)Running node monitor in Docker...$(NC)"
-	@if [ -z "$(NODE_NAME)" ] || [ -z "$(CLUSTER_ID)" ] || [ -z "$(KB_ENDPOINT)" ]; then \
+	@if [ -z "$(NODE_NAME)" ] || [ -z "$(NODE_TYPE)" ] || [ -z "$(CLUSTER_ID)" ] || [ -z "$(KB_ENDPOINT)" ]; then \
 		echo "$(RED)Error: Required variables not set$(NC)"; \
-		echo "Usage: make docker-run-node NODE_NAME=my-node CLUSTER_ID=my-cluster KB_ENDPOINT=http://kb:8080"; \
+		echo "Usage: make docker-run-node NODE_NAME=my-node NODE_TYPE=cloud CLUSTER_ID=my-cluster KB_ENDPOINT=http://kb:8080"; \
 		exit 1; \
 	fi
 	docker run --rm -it --privileged --pid=host --network=host \
@@ -136,6 +138,7 @@ docker-run-node: ## Run node monitor in Docker (requires NODE_NAME, CLUSTER_ID, 
 		-v /:/rootfs:ro \
 		$(DOCKER_IMAGE):$(DOCKER_TAG) node-monitor \
 		--node-name $(NODE_NAME) \
+		--node-type $(NODE_TYPE) \
 		--liqo-cluster-id $(CLUSTER_ID) \
 		--kb-endpoint $(KB_ENDPOINT)
 
@@ -160,6 +163,8 @@ docker-run-node-example: ## Run node monitor with example parameters
 		-v /:/rootfs:ro \
 		$(DOCKER_IMAGE):$(DOCKER_TAG) node-monitor \
 		--node-name example-node \
+		--node-type cloud \
+		--skip-node-type-inference \
 		--liqo-cluster-id example-cluster \
 		--kb-endpoint http://localhost:8080 \
 		--kb-disabled \
@@ -197,14 +202,14 @@ helm-uninstall: ## Uninstall Helm chart
 	helm uninstall $(PROJECT_NAME) --namespace $(NAMESPACE)
 
 # Local Development
-run-node: ## Run node monitor locally (requires NODE_NAME, CLUSTER_ID, KB_ENDPOINT)
+run-node: ## Run node monitor locally (requires NODE_NAME, NODE_TYPE, CLUSTER_ID, KB_ENDPOINT)
 	@echo "$(BLUE)Running node monitor...$(NC)"
-	@if [ -z "$(NODE_NAME)" ] || [ -z "$(CLUSTER_ID)" ] || [ -z "$(KB_ENDPOINT)" ]; then \
+	@if [ -z "$(NODE_NAME)" ] || [ -z "$(NODE_TYPE)" ] || [ -z "$(CLUSTER_ID)" ] || [ -z "$(KB_ENDPOINT)" ]; then \
 		echo "$(RED)Error: Required variables not set$(NC)"; \
-		echo "Usage: make run-node NODE_NAME=my-node CLUSTER_ID=my-cluster KB_ENDPOINT=http://kb:8080"; \
+		echo "Usage: make run-node NODE_NAME=my-node NODE_TYPE=cloud CLUSTER_ID=my-cluster KB_ENDPOINT=http://kb:8080"; \
 		exit 1; \
 	fi
-	uv run node-monitor --node-name $(NODE_NAME) --liqo-cluster-id $(CLUSTER_ID) --kb-endpoint $(KB_ENDPOINT)
+	uv run node-monitor --node-name $(NODE_NAME) --node-type $(NODE_TYPE) --liqo-cluster-id $(CLUSTER_ID) --kb-endpoint $(KB_ENDPOINT)
 
 run-cluster: ## Run cluster monitor locally (requires CLUSTER_ID, KB_ENDPOINT)
 	@echo "$(BLUE)Running cluster monitor...$(NC)"
@@ -220,6 +225,7 @@ run-node-example: ## Run node monitor locally with example parameters
 	uv run node-monitor \
 		--node-name $$(hostname) \
 		--node-type cloud \
+		--skip-node-type-inference \
 		--liqo-cluster-id example-cluster \
 		--kb-endpoint http://localhost:8080 \
 		--kb-disabled \
@@ -253,8 +259,101 @@ update-git-deps: ## Update git-sourced dependencies (e.g. mirtolib)
 	@echo "$(BLUE)Updating git-sourced dependencies...$(NC)"
 	@cp pyproject.toml pyproject.toml.bak && \
 	sed 's|[$$]{GITLAB_TOKEN}|'"$(GITLAB_TOKEN)"'|g' pyproject.toml.bak > pyproject.toml && \
-	{ uv sync --upgrade-package mirtolib; EXIT=$$?; mv pyproject.toml.bak pyproject.toml; exit $$EXIT; } || \
+	{ uv sync --no-cache --upgrade-package mirtolib; EXIT=$$?; mv pyproject.toml.bak pyproject.toml; exit $$EXIT; } || \
 	{ mv pyproject.toml.bak pyproject.toml; exit 1; }
+
+# Kind integration tests
+KIND_CLUSTER := myrtus-test
+KIND_CONTEXT := kind-$(KIND_CLUSTER)
+KIND_LOCAL_IMAGE := myrtus-monitor:kind-test
+KIND_HELM_FLAGS := \
+	--kube-context $(KIND_CONTEXT) \
+	--namespace $(NAMESPACE) --create-namespace \
+	--set image.repository=myrtus-monitor \
+	--set image.tag=kind-test \
+	--set image.pullPolicy=Never \
+	--set image.pullSecret.enabled=false \
+	--set global.liqoClusterId=kind-test-cluster \
+	--set global.kbEndpoint=http://localhost:8080 \
+	--set common.logLevel=DEBUG \
+	--set nodeMonitor.kbDisabled=true \
+	--set "tolerations[0].key=node-role.kubernetes.io/control-plane" \
+	--set "tolerations[0].operator=Exists" \
+	--set "tolerations[0].effect=NoSchedule"
+
+kind-setup: ## Create kind cluster and load the local test image
+	@command -v kind >/dev/null 2>&1 || { echo "$(RED)kind is required$(NC)"; exit 1; }
+	@echo "$(ORANGE)Creating kind cluster '$(KIND_CLUSTER)'...$(NC)"
+	@kind create cluster --name $(KIND_CLUSTER) 2>/dev/null || echo "$(YELLOW)Cluster already exists, reusing.$(NC)"
+	@echo "$(ORANGE)Building and loading test image into kind...$(NC)"
+	@docker build -f docker/Dockerfile --build-arg GITLAB_TOKEN=$(GITLAB_TOKEN) -t $(KIND_LOCAL_IMAGE) .
+	@kind load docker-image $(KIND_LOCAL_IMAGE) --name $(KIND_CLUSTER)
+	@echo "$(GREEN)Kind cluster ready.$(NC)"
+
+kind-teardown: ## Delete the kind test cluster
+	@echo "$(ORANGE)Deleting kind cluster '$(KIND_CLUSTER)'...$(NC)"
+	@kind delete cluster --name $(KIND_CLUSTER)
+
+kind-test-helm-value: ## Scenario 1 — node type resolved from Helm value (no node label)
+	@echo "$(ORANGE)--- Scenario 1: node type from Helm value (nodeType=cloud) ---$(NC)"
+	@helm upgrade --install $(PROJECT_NAME) $(HELM_CHART) $(KIND_HELM_FLAGS) \
+		--set nodeMonitor.nodeType=cloud \
+		--wait --timeout 90s
+	@kubectl wait pod \
+		-l app.kubernetes.io/name=$(PROJECT_NAME)-node-monitor \
+		-n $(NAMESPACE) --context $(KIND_CONTEXT) \
+		--for=condition=ready --timeout=60s
+	@echo "$(YELLOW)Waiting for first collection cycle...$(NC)"
+	@sleep 15
+	@echo "$(ORANGE)--- Pod logs ---$(NC)"
+	@kubectl logs \
+		-l app.kubernetes.io/name=$(PROJECT_NAME)-node-monitor \
+		-n $(NAMESPACE) --context $(KIND_CONTEXT) --tail=100
+	@echo "$(ORANGE)--- Verification ---$(NC)"
+	@kubectl logs \
+		-l app.kubernetes.io/name=$(PROJECT_NAME)-node-monitor \
+		-n $(NAMESPACE) --context $(KIND_CONTEXT) --tail=100 \
+		| grep -q "'node_type': 'cloud'" \
+		&& echo "$(GREEN)✓ PASS: node_type=cloud (from Helm value)$(NC)" \
+		|| echo "$(RED)✗ FAIL: expected node_type=cloud in metrics$(NC)"
+	@helm uninstall $(PROJECT_NAME) -n $(NAMESPACE) --kube-context $(KIND_CONTEXT) 2>/dev/null || true
+
+kind-test-label-override: ## Scenario 2 — node type overridden by myrtus.io/node-type node label
+	@echo "$(ORANGE)--- Scenario 2: node type from label override (label=fog, Helm=cloud) ---$(NC)"
+	@echo "$(YELLOW)Labelling kind node with myrtus.io/node-type=fog...$(NC)"
+	@kubectl label node $(KIND_CLUSTER)-control-plane myrtus.io/node-type=fog \
+		--overwrite --context $(KIND_CONTEXT)
+	@helm upgrade --install $(PROJECT_NAME) $(HELM_CHART) $(KIND_HELM_FLAGS) \
+		--set nodeMonitor.nodeType=cloud \
+		--wait --timeout 90s
+	@kubectl wait pod \
+		-l app.kubernetes.io/name=$(PROJECT_NAME)-node-monitor \
+		-n $(NAMESPACE) --context $(KIND_CONTEXT) \
+		--for=condition=ready --timeout=60s
+	@echo "$(YELLOW)Waiting for first collection cycle...$(NC)"
+	@sleep 15
+	@echo "$(ORANGE)--- Pod logs ---$(NC)"
+	@kubectl logs \
+		-l app.kubernetes.io/name=$(PROJECT_NAME)-node-monitor \
+		-n $(NAMESPACE) --context $(KIND_CONTEXT) --tail=100
+	@echo "$(ORANGE)--- Verification ---$(NC)"
+	@kubectl logs \
+		-l app.kubernetes.io/name=$(PROJECT_NAME)-node-monitor \
+		-n $(NAMESPACE) --context $(KIND_CONTEXT) --tail=100 \
+		| grep -q "node_type resolved from node label.*fog" \
+		&& echo "$(GREEN)✓ PASS: node_type inferred from label (fog)$(NC)" \
+		|| echo "$(RED)✗ FAIL: expected label inference log for fog$(NC)"
+	@kubectl logs \
+		-l app.kubernetes.io/name=$(PROJECT_NAME)-node-monitor \
+		-n $(NAMESPACE) --context $(KIND_CONTEXT) --tail=100 \
+		| grep -q "'node_type': 'fog'" \
+		&& echo "$(GREEN)✓ PASS: node_type=fog in metrics (overrode cloud from Helm)$(NC)" \
+		|| echo "$(RED)✗ FAIL: expected node_type=fog in metrics$(NC)"
+	@kubectl label node $(KIND_CLUSTER)-control-plane myrtus.io/node-type- \
+		--context $(KIND_CONTEXT) 2>/dev/null || true
+	@helm uninstall $(PROJECT_NAME) -n $(NAMESPACE) --kube-context $(KIND_CONTEXT) 2>/dev/null || true
+
+kind-test: kind-setup kind-test-helm-value kind-test-label-override kind-teardown ## Run both node type scenarios on kind
 
 all: clean install-dev build docker-build ## Run complete build pipeline
 	@echo "$(GREEN)Complete build pipeline finished!$(NC)"

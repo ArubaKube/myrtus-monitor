@@ -1,0 +1,125 @@
+{
+    "node_name": "TauriBook.local",
+    "node_type": "cloud",
+    "liqo_cluster_id": "example-cluster",
+    "type": "node",
+    "cpu": {
+        "used": 1280,
+        "total": 10000,
+        "physical": 10000,
+        "timestamp": 1779884259.227479
+    },
+    "disk": {
+        "partitions": [
+            {
+                "device": "/dev/disk3s1s1",
+                "mountpoint": "/",
+                "total": 494384795648,
+                "used": 16724680704
+            },
+            {
+                "device": "/dev/disk3s6",
+                "mountpoint": "/System/Volumes/VM",
+                "total": 494384795648,
+                "used": 3221426176
+            },
+            {
+                "device": "/dev/disk3s2",
+                "mountpoint": "/System/Volumes/Preboot",
+                "total": 494384795648,
+                "used": 17888272384
+            },
+            {
+                "device": "/dev/disk3s4",
+                "mountpoint": "/System/Volumes/Update",
+                "total": 494384795648,
+                "used": 818589696
+            },
+            {
+                "device": "/dev/disk1s2",
+                "mountpoint": "/System/Volumes/xarts",
+                "total": 524288000,
+                "used": 6311936
+            },
+            {
+                "device": "/dev/disk1s1",
+                "mountpoint": "/System/Volumes/iSCPreboot",
+                "total": 524288000,
+                "used": 6254592
+            },
+            {
+                "device": "/dev/disk1s3",
+                "mountpoint": "/System/Volumes/Hardware",
+                "total": 524288000,
+                "used": 978944
+            },
+            {
+                "device": "/dev/disk3s5",
+                "mountpoint": "/System/Volumes/Data",
+                "total": 494384795648,
+                "used": 430494003200
+            },
+            {
+                "device": "/dev/disk5s1",
+                "mountpoint": "/Library/Developer/CoreSimulator/Cryptex/Images/bundle/SimRuntimeBundle-0696F391-9805-42F4-836C-C3D3019D9D49",
+                "total": 4857004032,
+                "used": 4677017600
+            },
+            {
+                "device": "/dev/disk7s1",
+                "mountpoint": "/Library/Developer/CoreSimulator/Volumes/watchOS_22T572",
+                "total": 11404312576,
+                "used": 11052888064
+            },
+            {
+                "device": "/dev/disk11s1",
+                "mountpoint": "/Library/Developer/CoreSimulator/Cryptex/Images/bundle/SimRuntimeBundle-AF57CE98-15EC-4669-9D1A-3F6703571B3C",
+                "total": 9130999808,
+                "used": 8838344704
+            },
+            {
+                "device": "/dev/disk13s1",
+                "mountpoint": "/Library/Developer/CoreSimulator/Volumes/iOS_22G86",
+                "total": 20740833280,
+                "used": 20170223616
+            },
+            {
+                "device": "/dev/disk15s1",
+                "mountpoint": "/Library/Developer/CoreSimulator/Volumes/iOS_23F77",
+                "total": 18083741696,
+                "used": 17571344384
+            },
+            {
+                "device": "/dev/disk17s1",
+                "mountpoint": "/Library/Developer/CoreSimulator/Volumes/watchOS_23T570",
+                "total": 9112125440,
+                "used": 8807878656
+            },
+            {
+                "device": "/dev/disk2s1",
+                "mountpoint": "/System/Volumes/Update/SFR/mnt1",
+                "total": 5368664064,
+                "used": 2311905280
+            },
+            {
+                "device": "/dev/disk3s1",
+                "mountpoint": "/System/Volumes/Update/mnt1",
+                "total": 494384795648,
+                "used": 16724680704
+            }
+        ],
+        "total": 3046579318784,
+        "used": 559314800640,
+        "timestamp": 1779884259.227746
+    },
+    "memory": {
+        "total": 25769803776,
+        "used": 10551181312,
+        "timestamp": 1779884259.227762
+    },
+    "swap": {
+        "total": 3221225472,
+        "used": 2240741376,
+        "timestamp": 1779884259.2277708
+    }
+}

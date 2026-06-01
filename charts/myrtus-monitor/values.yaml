@@ -27,6 +27,8 @@ nodeMonitor:
   enabled: true
   # The type of the node being monitored. Options: cloud, fog, edge
   nodeType: "cloud"
+  # Disable the knowledge base integration (useful for local testing)
+  kbDisabled: false
   resources:
     requests:
       cpu: 100m
