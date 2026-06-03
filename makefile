@@ -16,7 +16,7 @@
 PYTHON_VERSION := 3.10
 PROJECT_NAME := myrtus-monitor
 DOCKER_IMAGE := ghcr.io/arubakube/myrtus-monitor
-DOCKER_TAG := latest
+DOCKER_TAG ?= latest
 HELM_CHART := charts/myrtus-monitor
 NAMESPACE := myrtus-system
 
@@ -118,12 +118,10 @@ clean: ## Clean build artifacts and cache
 docker-build: ## Build Docker image
 	@echo "$(BLUE)Building Docker image...$(NC)"
 	docker build -f docker/Dockerfile --build-arg GITLAB_TOKEN=$(GITLAB_TOKEN) -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
-	docker tag $(DOCKER_IMAGE):$(DOCKER_TAG) $(DOCKER_IMAGE):latest
 
 docker-push: docker-build ## Build and push Docker image
 	@echo "$(BLUE)Pushing Docker image...$(NC)"
 	docker push $(DOCKER_IMAGE):$(DOCKER_TAG)
-	docker push $(DOCKER_IMAGE):latest
 
 docker-run-node: ## Run node monitor in Docker (requires NODE_NAME, NODE_TYPE, CLUSTER_ID, KB_ENDPOINT)
 	@echo "$(BLUE)Running node monitor in Docker...$(NC)"
