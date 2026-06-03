@@ -7,7 +7,7 @@
         run-cluster-example docker-run-node docker-run-cluster docker-run-node-example \
         docker-run-cluster-example dev-setup check-deps security-check all \
         update-deps update-git-deps \
-        kind-setup kind-teardown kind-test-helm-value kind-test-label-override kind-test
+        kind-setup kind-teardown kind-install kind-test-helm-value kind-test-label-override kind-test-all kind-apply-label-override kind-demo
 
 # Default target
 .DEFAULT_GOAL := help
@@ -263,12 +263,14 @@ update-git-deps: ## Update git-sourced dependencies (e.g. mirtolib)
 # Kind integration tests
 KIND_CLUSTER := myrtus-test
 KIND_CONTEXT := kind-$(KIND_CLUSTER)
-KIND_LOCAL_IMAGE := myrtus-monitor:kind-test
+KIND_IMAGE_REPO ?= myrtus-monitor
+KIND_IMAGE_TAG ?= kind-test
+KIND_LOCAL_IMAGE := $(KIND_IMAGE_REPO):$(KIND_IMAGE_TAG)
 KIND_HELM_FLAGS := \
 	--kube-context $(KIND_CONTEXT) \
 	--namespace $(NAMESPACE) --create-namespace \
-	--set image.repository=myrtus-monitor \
-	--set image.tag=kind-test \
+	--set image.repository=$(KIND_IMAGE_REPO) \
+	--set image.tag=$(KIND_IMAGE_TAG) \
 	--set image.pullPolicy=Never \
 	--set image.pullSecret.enabled=false \
 	--set global.liqoClusterId=kind-test-cluster \
@@ -351,7 +353,28 @@ kind-test-label-override: ## Scenario 2 — node type overridden by myrtus.io/no
 		--context $(KIND_CONTEXT) 2>/dev/null || true
 	@helm uninstall $(PROJECT_NAME) -n $(NAMESPACE) --kube-context $(KIND_CONTEXT) 2>/dev/null || true
 
-kind-test: kind-setup kind-test-helm-value kind-test-label-override kind-teardown ## Run both node type scenarios on kind
+kind-install: ## Install chart on kind cluster with test defaults (manual workflow)
+	@helm upgrade --install $(PROJECT_NAME) $(HELM_CHART) $(KIND_HELM_FLAGS) \
+		--set nodeMonitor.nodeType=cloud \
+		--wait --timeout 90s
+	@echo "$(GREEN)Chart installed. Follow logs with:$(NC)"
+	@echo "  kubectl logs -f -l app.kubernetes.io/name=$(PROJECT_NAME)-node-monitor -n $(NAMESPACE) --context $(KIND_CONTEXT)"
+
+kind-apply-label-override: ## Apply myrtus.io/node-type=fog label and restart pod to trigger re-inference
+	@echo "$(ORANGE)Applying myrtus.io/node-type=fog label to node '$(KIND_CLUSTER)-control-plane'...$(NC)"
+	@kubectl label node $(KIND_CLUSTER)-control-plane myrtus.io/node-type=fog \
+		--overwrite --context $(KIND_CONTEXT)
+	@echo "$(ORANGE)Restarting DaemonSet to trigger inference...$(NC)"
+	@kubectl rollout restart daemonset $(PROJECT_NAME)-node-monitor \
+		-n $(NAMESPACE) --context $(KIND_CONTEXT)
+	@kubectl rollout status daemonset $(PROJECT_NAME)-node-monitor \
+		-n $(NAMESPACE) --context $(KIND_CONTEXT) --timeout=60s
+	@echo "$(ORANGE)--- Pod logs ---$(NC)"
+	@kubectl logs -f -l app.kubernetes.io/name=$(PROJECT_NAME)-node-monitor \
+		-n $(NAMESPACE) --context $(KIND_CONTEXT)
+
+kind-test-all: kind-setup kind-test-helm-value kind-test-label-override kind-teardown ## Run both automated node type scenarios on kind (setup → test → teardown)
+kind-demo: kind-setup kind-install kind-apply-label-override kind-teardown ## Manual workflow: setup → install → label override → teardown
 
 all: clean install-dev build docker-build ## Run complete build pipeline
 	@echo "$(GREEN)Complete build pipeline finished!$(NC)"
