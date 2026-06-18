@@ -29,6 +29,9 @@ nodeMonitor:
   nodeType: "cloud"
   # Disable the knowledge base integration (useful for local testing)
   kbDisabled: false
+  # On nodes where the in-cluster K8s config cannot be loaded (typical of KubeEdge
+  # edge nodes), use node_type=edge instead of falling back to nodeType above
+  enableKubeedgeFallback: false
   resources:
     requests:
       cpu: 100m
@@ -44,6 +47,8 @@ nodeMonitor:
 # Cluster monitor specific configuration
 clusterMonitor:
   enabled: true
+  # Disable the knowledge base integration (useful for local testing)
+  kbDisabled: false
   resources:
     # requests:
     #   cpu: 100m

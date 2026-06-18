@@ -540,7 +540,7 @@ wheels = [
 [[package]]
 name = "mirtolib"
 version = "1.0"
-source = { git = "https://gitlab.abinsula.com/myrtus/mirto/mirto-lib#49e43ceecb8f6efda84d1c68af717ab1fa79a64b" }
+source = { git = "https://gitlab.abinsula.com/myrtus/mirto/mirto-lib#e884942c9f6d82bc5dcea6f707f28c60d87792d5" }
 dependencies = [
     { name = "pydantic" },
 ]

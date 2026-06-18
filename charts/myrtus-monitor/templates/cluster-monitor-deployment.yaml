@@ -48,6 +48,9 @@ spec:
           - "--log-level={{ .Values.common.logLevel }}"
           - "--default-timeout={{ .Values.common.defaultTimeout }}"
           - "--default-period={{ .Values.common.defaultPeriod }}"
+          {{- if .Values.clusterMonitor.kbDisabled }}
+          - "--kb-disabled"
+          {{- end }}
         resources:
           {{- toYaml .Values.clusterMonitor.resources | nindent 12 }}
         env:

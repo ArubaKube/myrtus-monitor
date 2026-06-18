@@ -3,7 +3,7 @@
 import logging
 
 from mirto import dkb
-from mirto.namespaces import DEPLOYER_COMPUTES
+from mirto.namespaces import COMPUTE_NODES
 
 from monitor.core import Monitor
 
@@ -56,11 +56,10 @@ class ClusterMonitor(Monitor):
             for m in self._metrics.get("virtual_nodes", [])
         }
 
-        logger.debug("Metrics: %s", metrics)
-        logger.debug("DKB enabled: %s", self.kb_enabled)
+        logger.debug(metrics)
 
         if self.kb_enabled:
             logger.info("Sending metrics to DKB...")
-            dkb.store_json(DEPLOYER_COMPUTES, f"{self.liqo_cluster_id}", metrics)
+            dkb.store_json(COMPUTE_NODES, f"{self.liqo_cluster_id}", metrics)
         else:
             logger.info("DKB integration disabled. No data has been sent.")

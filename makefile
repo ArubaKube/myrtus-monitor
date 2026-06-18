@@ -277,6 +277,7 @@ KIND_HELM_FLAGS := \
 	--set global.kbEndpoint=http://localhost:8080 \
 	--set common.logLevel=DEBUG \
 	--set nodeMonitor.kbDisabled=true \
+	--set clusterMonitor.kbDisabled=true \
 	--set "tolerations[0].key=node-role.kubernetes.io/control-plane" \
 	--set "tolerations[0].operator=Exists" \
 	--set "tolerations[0].effect=NoSchedule"

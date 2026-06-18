@@ -58,6 +58,9 @@ spec:
           {{- if .Values.nodeMonitor.kbDisabled }}
           - "--kb-disabled"
           {{- end }}
+          {{- if .Values.nodeMonitor.enableKubeedgeFallback }}
+          - "--enable-kubeedge-fallback"
+          {{- end }}
         env:
           - name: NODE_NAME
             valueFrom:

@@ -17,6 +17,7 @@ from monitor.shared.utils import cexit
 def main():
     """Entrypoint for the cluster monitor service."""
     args = _parse_args()
+    logging.basicConfig(level=LogLevel[args.log_level].value, force=True)
     try:
         config = ClusterMonitorConfig(
             liqo_cluster_id=args.liqo_cluster_id,
@@ -25,11 +26,6 @@ def main():
             log_level=LogLevel[args.log_level],
             default_timeout=args.default_timeout,
             default_period=args.default_period,
-        )
-
-        # Configure logging based on the log level
-        logging.basicConfig(
-            level=config.log_level.value,
         )
 
         asyncio.run(run_monitor(config))
