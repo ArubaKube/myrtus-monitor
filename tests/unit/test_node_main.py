@@ -9,7 +9,7 @@ from monitor.node.main import (
     KUBEEDGE_NODE_TYPE,
     MYRTUS_LABEL_PREFIX,
     NODE_TYPE_LABEL,
-    _get_myrtus_label_values,
+    _get_myrtus_labels,
     _resolve_node_type,
 )
 
@@ -35,7 +35,7 @@ def test_label_overrides_fallback(mock_load, mock_api_cls):
 
 @patch("monitor.node.main.client.CoreV1Api")
 @patch("monitor.node.main.k8s_config.load_incluster_config")
-def test_myrtus_label_values_are_filtered_from_node_labels(mock_load, mock_api_cls):
+def test_myrtus_labels_are_filtered_from_node_labels(mock_load, mock_api_cls):
     labels = {
         f"{MYRTUS_LABEL_PREFIX}node-type": "fog",
         f"{MYRTUS_LABEL_PREFIX}location": "turin",
@@ -43,12 +43,15 @@ def test_myrtus_label_values_are_filtered_from_node_labels(mock_load, mock_api_c
     }
     mock_api_cls.return_value.read_node.return_value = _make_node_with_labels(labels)
 
-    assert _get_myrtus_label_values("my-node") == ["fog", "turin"]
+    assert _get_myrtus_labels("my-node") == {
+        f"{MYRTUS_LABEL_PREFIX}node-type": "fog",
+        f"{MYRTUS_LABEL_PREFIX}location": "turin",
+    }
 
 
 @patch("monitor.node.main.k8s_config.load_incluster_config", side_effect=Exception("not in cluster"))
-def test_myrtus_label_values_are_empty_when_k8s_is_unavailable(mock_incluster):
-    assert _get_myrtus_label_values("my-node") == []
+def test_myrtus_labels_are_empty_when_k8s_is_unavailable(mock_incluster):
+    assert _get_myrtus_labels("my-node") == {}
 
 
 @patch("monitor.node.main.client.CoreV1Api")

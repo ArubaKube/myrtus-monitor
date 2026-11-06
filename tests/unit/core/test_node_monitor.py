@@ -23,7 +23,8 @@ def node_monitor_config():
 
 def test_node_monitor_init(node_monitor_config):
     """Test that NodeMonitor parameters are correctly set."""
-    nm = NodeMonitor(labels=["fog", "turin"], **node_monitor_config)
+    labels = {"myrtus.io/node-type": "fog", "myrtus.io/location": "turin"}
+    nm = NodeMonitor(labels=labels, **node_monitor_config)
     assert nm.node_name == node_monitor_config["node_name"]
     assert nm.liqo_cluster_id == node_monitor_config["liqo_cluster_id"]
-    assert nm._metrics["labels"] == ["fog", "turin"]
+    assert nm._metrics["labels"] == labels

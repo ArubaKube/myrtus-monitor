@@ -56,8 +56,8 @@ def _get_node_labels(node_name: str, timeout: int = 10) -> dict[str, str]:
         executor.shutdown(wait=False)
 
 
-def _get_myrtus_label_values(node_name: str, timeout: int = 10) -> list[str]:
-    """Return values of the node labels managed by MYRTUS.
+def _get_myrtus_labels(node_name: str, timeout: int = 10) -> dict[str, str]:
+    """Return the MYRTUS labels assigned to a node.
 
     Labels are loaded once at monitor startup because they are not expected to
     change during normal monitor operation. A lookup failure is non-fatal and
@@ -67,12 +67,12 @@ def _get_myrtus_label_values(node_name: str, timeout: int = 10) -> list[str]:
         labels = _get_node_labels(node_name, timeout)
     except FuturesTimeoutError:
         logging.warning("K8s node label lookup timed out after %ds; labels metric will be empty", timeout)
-        return []
+        return {}
     except Exception as exc:
         logging.warning("Could not read node labels from K8s API (%s); labels metric will be empty", exc)
-        return []
+        return {}
 
-    return [value for key, value in labels.items() if key.startswith(MYRTUS_LABEL_PREFIX)]
+    return {key: value for key, value in labels.items() if key.startswith(MYRTUS_LABEL_PREFIX)}
 
 
 def _resolve_node_type(
@@ -157,7 +157,7 @@ async def run_monitor(config: NodeMonitorConfig):
             liqo_cluster_id=config.liqo_cluster_id,
             kb_enabled=config.kb_enabled,
             kb_endpoint=config.kb_endpoint,
-            labels=_get_myrtus_label_values(config.node_name),
+            labels=_get_myrtus_labels(config.node_name),
             active_collectors=config.active_collectors,
             exclude_collectors=config.exclude_collectors,
         )

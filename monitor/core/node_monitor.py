@@ -24,7 +24,7 @@ class NodeMonitor(Monitor):
         liqo_cluster_id: str,
         node_name: str,
         node_type: NodeType,
-        labels: list[str] | None = None,
+        labels: dict[str, str] | None = None,
         active_collectors: list[str] | None = None,
         exclude_collectors: list[str] | None = None,
         default_timeout: int = 60,
@@ -36,7 +36,7 @@ class NodeMonitor(Monitor):
             kb_endpoint (str): The endpoint for the knowledge base service where metrics are pushed.
             liqo_cluster_id (str): The Liqo cluster ID where the node is running.
             node_name (str): the name of the node being monitored.
-            labels (list[str], optional): MYRTUS label values assigned to the node.
+            labels (dict[str, str], optional): MYRTUS labels assigned to the node.
             active_collectors (list[str], optional): The list of the only active collectors.
                 If empty all the active discovered collectors are started. Defaults to None.
             exclude_collectors (list[str], optional): The list of collectors to exclude from the
@@ -63,7 +63,7 @@ class NodeMonitor(Monitor):
             "node_type": node_type.value,
             "liqo_cluster_id": liqo_cluster_id,
             "type": "node",
-            "labels": labels or [],
+            "labels": labels or {},
         }
 
         # this is how it should be done but it's not working due to the current KDB's implementation
