@@ -5,8 +5,10 @@ import asyncio
 import logging
 import sys
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+from typing import cast
 
 from kubernetes import client, config as k8s_config
+from kubernetes.client.models.v1_node import V1Node
 from kubernetes.config.config_exception import ConfigException
 from pydantic import ValidationError
 
@@ -16,13 +18,61 @@ from monitor.shared.config import LogLevel, NodeType
 from monitor.shared.errors import MonitorBaseError
 from monitor.shared.utils import cexit
 
-NODE_TYPE_LABEL = "myrtus.io/node-type"
+MYRTUS_LABEL_PREFIX = "myrtus.io/"
+NODE_TYPE_LABEL = f"{MYRTUS_LABEL_PREFIX}node-type"
 KUBEEDGE_NODE_TYPE = "edge"
 # ConfigException is raised for several distinct reasons (missing token file, missing
 # cert, no service env vars at all, ...). Only this specific message indicates the
 # KubeEdge symptom: edgecore exposes empty KUBERNETES_SERVICE_HOST/PORT env vars
 # because it doesn't sync the kubernetes Service from the control plane.
 KUBEEDGE_CONFIG_EXCEPTION_MESSAGE = "Service host/port is set but empty."
+
+
+def _get_node_labels(node_name: str, timeout: int = 10) -> dict[str, str]:
+    """Read all labels from a Kubernetes node, bounded by ``timeout`` seconds."""
+
+    def _fetch() -> dict[str, str]:
+        logging.debug("Loading in-cluster K8s config...")
+        configuration = client.Configuration()
+        k8s_config.load_incluster_config(client_configuration=configuration)
+        # kubernetes-client >=36 stores the token under api_key['authorization'] but
+        # auth_settings() looks for api_key['BearerToken'] — remap so the header is sent.
+        if bearer := configuration.api_key.get("authorization"):
+            configuration.api_key["BearerToken"] = bearer
+        logging.debug("In-cluster config loaded, reading node '%s'...", node_name)
+        with client.ApiClient(configuration) as api:
+            node = cast(
+                V1Node,
+                client.CoreV1Api(api).read_node(node_name, _request_timeout=timeout),
+            )
+        labels = node.metadata.labels if node.metadata and node.metadata.labels else {}
+        logging.debug("Node labels: %s", labels)
+        return labels
+
+    executor = ThreadPoolExecutor(max_workers=1)
+    try:
+        return executor.submit(_fetch).result(timeout=timeout)
+    finally:
+        executor.shutdown(wait=False)
+
+
+def _get_myrtus_labels(node_name: str, timeout: int = 10) -> dict[str, str]:
+    """Return the MYRTUS labels assigned to a node.
+
+    Labels are loaded once at monitor startup because they are not expected to
+    change during normal monitor operation. A lookup failure is non-fatal and
+    produces an empty metric value.
+    """
+    try:
+        labels = _get_node_labels(node_name, timeout)
+    except FuturesTimeoutError:
+        logging.warning("K8s node label lookup timed out after %ds; labels metric will be empty", timeout)
+        return {}
+    except Exception as exc:
+        logging.warning("Could not read node labels from K8s API (%s); labels metric will be empty", exc)
+        return {}
+
+    return {key: value for key, value in labels.items() if key.startswith(MYRTUS_LABEL_PREFIX)}
 
 
 def _resolve_node_type(
@@ -40,23 +90,8 @@ def _resolve_node_type(
     """
     logging.info("Resolving node type for node '%s' (fallback=%s)", node_name, fallback)
 
-    def _fetch() -> str | None:
-        logging.debug("Loading in-cluster K8s config...")
-        configuration = client.Configuration()
-        k8s_config.load_incluster_config(client_configuration=configuration)
-        # kubernetes-client >=36 stores the token under api_key['authorization'] but
-        # auth_settings() looks for api_key['BearerToken'] — remap so the header is sent.
-        if bearer := configuration.api_key.get('authorization'):
-            configuration.api_key['BearerToken'] = bearer
-        logging.debug("In-cluster config loaded, reading node '%s'...", node_name)
-        with client.ApiClient(configuration) as api:
-            labels = client.CoreV1Api(api).read_node(node_name, _request_timeout=timeout).metadata.labels or {}
-        logging.debug("Node labels: %s", labels)
-        return labels.get(NODE_TYPE_LABEL)
-
-    executor = ThreadPoolExecutor(max_workers=1)
     try:
-        label_value = executor.submit(_fetch).result(timeout=timeout)
+        label_value = _get_node_labels(node_name, timeout).get(NODE_TYPE_LABEL)
         if label_value:
             logging.info("node_type resolved from node label '%s': %s", NODE_TYPE_LABEL, label_value)
             return label_value
@@ -74,8 +109,6 @@ def _resolve_node_type(
         logging.warning("Could not load in-cluster K8s config (%s), falling back to --node-type arg", exc)
     except Exception as exc:
         logging.warning("Could not read node labels from K8s API (%s), falling back to --node-type arg", exc)
-    finally:
-        executor.shutdown(wait=False)
     return fallback
 
 
@@ -124,6 +157,7 @@ async def run_monitor(config: NodeMonitorConfig):
             liqo_cluster_id=config.liqo_cluster_id,
             kb_enabled=config.kb_enabled,
             kb_endpoint=config.kb_endpoint,
+            labels=_get_myrtus_labels(config.node_name),
             active_collectors=config.active_collectors,
             exclude_collectors=config.exclude_collectors,
         )

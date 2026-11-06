@@ -5,7 +5,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 from kubernetes.config.config_exception import ConfigException
 
-from monitor.node.main import KUBEEDGE_NODE_TYPE, NODE_TYPE_LABEL, _resolve_node_type
+from monitor.node.main import (
+    KUBEEDGE_NODE_TYPE,
+    MYRTUS_LABEL_PREFIX,
+    NODE_TYPE_LABEL,
+    _get_myrtus_labels,
+    _resolve_node_type,
+)
 
 
 def _make_node(label_value: str | None):
@@ -14,11 +20,38 @@ def _make_node(label_value: str | None):
     return node
 
 
+def _make_node_with_labels(labels: dict[str, str]):
+    node = MagicMock()
+    node.metadata.labels = labels
+    return node
+
+
 @patch("monitor.node.main.client.CoreV1Api")
 @patch("monitor.node.main.k8s_config.load_incluster_config")
 def test_label_overrides_fallback(mock_load, mock_api_cls):
     mock_api_cls.return_value.read_node.return_value = _make_node("fog")
     assert _resolve_node_type("my-node", "cloud") == "fog"
+
+
+@patch("monitor.node.main.client.CoreV1Api")
+@patch("monitor.node.main.k8s_config.load_incluster_config")
+def test_myrtus_labels_are_filtered_from_node_labels(mock_load, mock_api_cls):
+    labels = {
+        f"{MYRTUS_LABEL_PREFIX}node-type": "fog",
+        f"{MYRTUS_LABEL_PREFIX}location": "turin",
+        "kubernetes.io/hostname": "my-node",
+    }
+    mock_api_cls.return_value.read_node.return_value = _make_node_with_labels(labels)
+
+    assert _get_myrtus_labels("my-node") == {
+        f"{MYRTUS_LABEL_PREFIX}node-type": "fog",
+        f"{MYRTUS_LABEL_PREFIX}location": "turin",
+    }
+
+
+@patch("monitor.node.main.k8s_config.load_incluster_config", side_effect=Exception("not in cluster"))
+def test_myrtus_labels_are_empty_when_k8s_is_unavailable(mock_incluster):
+    assert _get_myrtus_labels("my-node") == {}
 
 
 @patch("monitor.node.main.client.CoreV1Api")
