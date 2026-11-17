@@ -6,10 +6,12 @@ import pytest
 from kubernetes.config.config_exception import ConfigException
 
 from monitor.node.main import (
+    HAS_AXIS_DLPU_LABEL,
     KUBEEDGE_NODE_TYPE,
     MYRTUS_LABEL_PREFIX,
     NODE_TYPE_LABEL,
     _get_myrtus_labels,
+    _resolve_has_axis_dlpu,
     _resolve_node_type,
 )
 
@@ -105,3 +107,76 @@ def test_kubeedge_fallback_not_used_for_other_config_exceptions(message):
         side_effect=ConfigException(message),
     ):
         assert _resolve_node_type("my-node", "cloud", kubeedge_fallback=True) == "cloud"
+
+
+@patch("monitor.node.main.client.CoreV1Api")
+@patch("monitor.node.main.k8s_config.load_incluster_config")
+def test_has_axis_label_true_overrides_fallback(mock_load, mock_api_cls):
+    mock_api_cls.return_value.read_node.return_value = _make_node_with_labels({HAS_AXIS_DLPU_LABEL: "true"})
+    assert _resolve_has_axis_dlpu("my-node", False) is True
+
+
+@patch("monitor.node.main.client.CoreV1Api")
+@patch("monitor.node.main.k8s_config.load_incluster_config")
+def test_has_axis_label_false_overrides_fallback(mock_load, mock_api_cls):
+    mock_api_cls.return_value.read_node.return_value = _make_node_with_labels({HAS_AXIS_DLPU_LABEL: "false"})
+    assert _resolve_has_axis_dlpu("my-node", True) is False
+
+
+@patch("monitor.node.main.client.CoreV1Api")
+@patch("monitor.node.main.k8s_config.load_incluster_config")
+def test_has_axis_fallback_used_when_label_absent(mock_load, mock_api_cls):
+    mock_api_cls.return_value.read_node.return_value = _make_node_with_labels(
+        {f"{MYRTUS_LABEL_PREFIX}node-type": "cloud"}
+    )
+    assert _resolve_has_axis_dlpu("my-node", True) is True
+
+
+@patch("monitor.node.main.k8s_config.load_incluster_config", side_effect=ConfigException("Service host/port is set but empty."))
+def test_has_axis_fallback_used_when_k8s_config_unavailable(mock_load):
+    assert _resolve_has_axis_dlpu("my-node", False) is False
+
+
+@patch("monitor.node.main.k8s_config.load_incluster_config", side_effect=Exception("not in cluster"))
+def test_has_axis_fallback_used_when_k8s_unavailable(mock_load):
+    assert _resolve_has_axis_dlpu("my-node", True) is True
+
+
+@patch("monitor.node.main.client.CoreV1Api")
+@patch("monitor.node.main.k8s_config.load_incluster_config")
+def test_has_axis_fallback_used_when_api_call_fails(mock_load, mock_api_cls):
+    mock_api_cls.return_value.read_node.side_effect = Exception("api error")
+    assert _resolve_has_axis_dlpu("my-node", False) is False
+
+
+@patch(
+    "monitor.node.main.k8s_config.load_incluster_config",
+    side_effect=ConfigException("Service host/port is set but empty."),
+)
+def test_kubeedge_fallback_has_axis_true_when_enabled_and_config_unavailable(mock_load):
+    assert _resolve_has_axis_dlpu("my-node", False, kubeedge_fallback=True) is True
+
+
+@patch(
+    "monitor.node.main.k8s_config.load_incluster_config",
+    side_effect=ConfigException("Service host/port is set but empty."),
+)
+def test_has_axis_dlpu_arg_used_when_kubeedge_fallback_disabled(mock_load):
+    assert _resolve_has_axis_dlpu("my-node", False, kubeedge_fallback=False) is False
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Service host/port is not set.",
+        "Service token file does not exist.",
+        "Service certification file does not exist.",
+        "Cert file exists but empty.",
+    ],
+)
+def test_kubeedge_fallback_not_used_for_other_config_exceptions_has_axis(message):
+    with patch(
+        "monitor.node.main.k8s_config.load_incluster_config",
+        side_effect=ConfigException(message),
+    ):
+        assert _resolve_has_axis_dlpu("my-node", False, kubeedge_fallback=True) is False

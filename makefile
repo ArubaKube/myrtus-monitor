@@ -15,6 +15,7 @@
 # Variables
 PYTHON_VERSION := 3.10
 PROJECT_NAME := myrtus-monitor
+HAS_AXIS_DLPU ?= false
 DOCKER_IMAGE := ghcr.io/arubakube/myrtus-monitor
 DOCKER_TAG ?= latest
 HELM_CHART := charts/myrtus-monitor
@@ -127,7 +128,7 @@ docker-run-node: ## Run node monitor in Docker (requires NODE_NAME, NODE_TYPE, C
 	@echo "$(BLUE)Running node monitor in Docker...$(NC)"
 	@if [ -z "$(NODE_NAME)" ] || [ -z "$(NODE_TYPE)" ] || [ -z "$(CLUSTER_ID)" ] || [ -z "$(KB_ENDPOINT)" ]; then \
 		echo "$(RED)Error: Required variables not set$(NC)"; \
-		echo "Usage: make docker-run-node NODE_NAME=my-node NODE_TYPE=cloud CLUSTER_ID=my-cluster KB_ENDPOINT=http://kb:8080"; \
+		echo "Usage: make docker-run-node NODE_NAME=my-node NODE_TYPE=cloud CLUSTER_ID=my-cluster KB_ENDPOINT=http://kb:8080 [HAS_AXIS_DLPU=true]"; \
 		exit 1; \
 	fi
 	docker run --rm -it --privileged --pid=host --network=host \
@@ -137,6 +138,7 @@ docker-run-node: ## Run node monitor in Docker (requires NODE_NAME, NODE_TYPE, C
 		$(DOCKER_IMAGE):$(DOCKER_TAG) node-monitor \
 		--node-name $(NODE_NAME) \
 		--node-type $(NODE_TYPE) \
+		--has-axis-dlpu $(HAS_AXIS_DLPU) \
 		--liqo-cluster-id $(CLUSTER_ID) \
 		--kb-endpoint $(KB_ENDPOINT)
 
@@ -204,10 +206,10 @@ run-node: ## Run node monitor locally (requires NODE_NAME, NODE_TYPE, CLUSTER_ID
 	@echo "$(BLUE)Running node monitor...$(NC)"
 	@if [ -z "$(NODE_NAME)" ] || [ -z "$(NODE_TYPE)" ] || [ -z "$(CLUSTER_ID)" ] || [ -z "$(KB_ENDPOINT)" ]; then \
 		echo "$(RED)Error: Required variables not set$(NC)"; \
-		echo "Usage: make run-node NODE_NAME=my-node NODE_TYPE=cloud CLUSTER_ID=my-cluster KB_ENDPOINT=http://kb:8080"; \
+		echo "Usage: make run-node NODE_NAME=my-node NODE_TYPE=cloud CLUSTER_ID=my-cluster KB_ENDPOINT=http://kb:8080 [HAS_AXIS_DLPU=true]"; \
 		exit 1; \
 	fi
-	uv run node-monitor --node-name $(NODE_NAME) --node-type $(NODE_TYPE) --liqo-cluster-id $(CLUSTER_ID) --kb-endpoint $(KB_ENDPOINT)
+	uv run node-monitor --node-name $(NODE_NAME) --node-type $(NODE_TYPE) --has-axis-dlpu $(HAS_AXIS_DLPU) --liqo-cluster-id $(CLUSTER_ID) --kb-endpoint $(KB_ENDPOINT)
 
 run-cluster: ## Run cluster monitor locally (requires CLUSTER_ID, KB_ENDPOINT)
 	@echo "$(BLUE)Running cluster monitor...$(NC)"

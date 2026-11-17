@@ -20,6 +20,7 @@ from monitor.shared.utils import cexit
 
 MYRTUS_LABEL_PREFIX = "myrtus.io/"
 NODE_TYPE_LABEL = f"{MYRTUS_LABEL_PREFIX}node-type"
+HAS_AXIS_DLPU_LABEL = f"{MYRTUS_LABEL_PREFIX}HAS_AXIS_DLPU"
 KUBEEDGE_NODE_TYPE = "edge"
 # ConfigException is raised for several distinct reasons (missing token file, missing
 # cert, no service env vars at all, ...). Only this specific message indicates the
@@ -112,6 +113,55 @@ def _resolve_node_type(
     return fallback
 
 
+def _resolve_has_axis_dlpu(
+    node_name: str, fallback: bool, kubeedge_fallback: bool = False, timeout: int = 10
+) -> bool:
+    """Return whether the node has an AXIS DLPU, as a boolean.
+
+    Reads the myrtus.io/HAS_AXIS_DLPU label from the Kubernetes node object so the
+    value can be assigned per-node at runtime. On nodes where the in-cluster K8s
+    config is unavailable (so `_get_node_labels` raises/returns empty), the CLI
+    value supplied via --has-axis-dlpu is used as the fallback.
+
+    KubeEdge edge nodes cannot load the in-cluster K8s config (their edgecore
+    doesn't sync the kubernetes Service env vars from the control plane), so when
+    kubeedge_fallback is enabled and that specific failure is detected, has_axis_dlpu
+    resolves to True instead of falling through to the --has-axis-dlpu arg.
+    """
+    logging.info(
+        "Resolving HAS_AXIS_DLPU for node '%s' (fallback=%s)", node_name, fallback
+    )
+    try:
+        label_value = _get_node_labels(node_name, timeout).get(HAS_AXIS_DLPU_LABEL)
+        if label_value:
+            logging.info(
+                "has_axis_dlpu resolved from node label '%s': %s", HAS_AXIS_DLPU_LABEL, label_value
+            )
+            return label_value == "true"
+        logging.debug(
+            "Label '%s' not set on node '%s', using --has-axis-dlpu fallback",
+            HAS_AXIS_DLPU_LABEL,
+            node_name,
+        )
+    except FuturesTimeoutError:
+        logging.warning(
+            "K8s node label lookup timed out after %ds, falling back to --has-axis-dlpu arg", timeout
+        )
+    except ConfigException as exc:
+        if kubeedge_fallback and KUBEEDGE_CONFIG_EXCEPTION_MESSAGE in str(exc):
+            logging.warning(
+                "In-cluster K8s config unavailable (%s), assuming KubeEdge node, using has_axis_dlpu=true",
+                exc,
+            )
+            return True
+        logging.warning(
+            "Could not load in-cluster K8s config (%s), falling back to --has-axis-dlpu arg", exc
+        )
+    except Exception as exc:
+        logging.warning("Could not read node labels from K8s API (%s), falling back to --has-axis-dlpu arg", exc)
+    return fallback
+
+
 def main():
     """Entrypoint for the Node monitor service."""
     args = _parse_args()
@@ -125,6 +175,9 @@ def main():
                 else _resolve_node_type(args.node_name, args.node_type, args.enable_kubeedge_fallback)
             ],
             liqo_cluster_id=args.liqo_cluster_id,
+            has_axis_dlpu=_resolve_has_axis_dlpu(
+                args.node_name, args.has_axis_dlpu == "true", args.enable_kubeedge_fallback
+            ),
             kb_enabled=not args.kb_disabled,
             kb_endpoint=args.kb_endpoint,
             log_level=LogLevel[args.log_level],
@@ -151,13 +204,19 @@ async def run_monitor(config: NodeMonitorConfig):
     """
     logger = logging.getLogger(__name__)
     try:
+        labels = _get_myrtus_labels(config.node_name)
+        # On nodes where the in-cluster K8s config is unavailable `_get_myrtus_labels`
+        # returns an empty dict, so the CLI value becomes the sole source of truth.
+        labels[HAS_AXIS_DLPU_LABEL] = "true" if config.has_axis_dlpu else "false"
+
         monitor = NodeMonitor(
             node_name=config.node_name,
             node_type=config.node_type,
             liqo_cluster_id=config.liqo_cluster_id,
+            has_axis_dlpu=config.has_axis_dlpu,
             kb_enabled=config.kb_enabled,
             kb_endpoint=config.kb_endpoint,
-            labels=_get_myrtus_labels(config.node_name),
+            labels=labels,
             active_collectors=config.active_collectors,
             exclude_collectors=config.exclude_collectors,
         )
@@ -198,6 +257,16 @@ def _parse_args():
         action="store_true",
         help=f"Skip node type inference from the '{NODE_TYPE_LABEL}' node label "
              "and use --node-type directly.",
+    )
+
+    aparser.add_argument(
+        "--has-axis-dlpu",
+        type=str,
+        choices=["true", "false"],
+        default="false",
+        help="Whether the node has an AXIS DLPU (true/false). Used as the value of the "
+             f"'{HAS_AXIS_DLPU_LABEL}' node label on nodes where the in-cluster K8s config "
+             "is unavailable. When a node label is present it takes precedence over this arg.",
     )
 
     aparser.add_argument(

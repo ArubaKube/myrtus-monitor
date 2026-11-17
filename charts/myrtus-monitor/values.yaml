@@ -27,6 +27,10 @@ nodeMonitor:
   enabled: true
   # The type of the node being monitored. Options: cloud, fog, edge
   nodeType: "cloud"
+  # Whether the node has an AXIS DLPU (true/false). Used as the value of the
+  # myrtus.io/HAS_AXIS_DLPU node label on nodes where the in-cluster K8s config is
+  # unavailable. When a node label is present it takes precedence over this value.
+  hasAxisDlpu: "false"
   # Disable the knowledge base integration (useful for local testing)
   kbDisabled: false
   # On nodes where the in-cluster K8s config cannot be loaded (typical of KubeEdge

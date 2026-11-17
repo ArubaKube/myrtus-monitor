@@ -15,6 +15,8 @@ class NodeMonitorConfig:
     node_type: NodeType
     # The Liqo cluster ID where the node is running.
     liqo_cluster_id: str
+    # Whether the node has an AXIS DLPU (true/false).
+    has_axis_dlpu: bool
     # The knowledge base feature flag.
     kb_enabled: bool
     # The endpoint for the knowledge base service where metrics are pushed.
